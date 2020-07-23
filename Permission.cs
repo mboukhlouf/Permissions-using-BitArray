@@ -22,6 +22,24 @@ namespace PermissionsWithBitArray
 
         private static int PermissionValuesCount { get; } = Enum.GetValues(typeof(PermissionValue)).Length;
 
+        private static readonly Dictionary<string, Permission> permissionsDictionary;
+
+        static Permission()
+        {
+            permissionsDictionary = new Dictionary<string, Permission>();
+            var type = typeof(Permission);
+            var props = type.GetProperties();
+            foreach(var p in props)
+            {
+                var v = p.GetValue(null, null);
+                if(v is Permission)
+                {
+                    var permission = v as Permission;
+                    permissionsDictionary.Add(p.Name, permission);
+                }
+            }
+        }
+
         #region Suppliers
 
         public static Permission ListSuppliers { get; } = new Permission(PermissionValue.ListSuppliers);
@@ -65,6 +83,17 @@ namespace PermissionsWithBitArray
             return permission;
         }
 
+        public static Permission operator !(Permission permission)
+        {
+            var invertedPermission = new Permission(permission);
+            return invertedPermission.Not();
+        }
+
+        public static Permission FromString(string str)
+        {
+            return permissionsDictionary.ContainsKey(str) ? permissionsDictionary[str] : null;
+        }
+
         private readonly BitArray bitArray;
 
         public Permission()
@@ -94,6 +123,12 @@ namespace PermissionsWithBitArray
             return this;
         }
 
+        public Permission Not()
+        {
+            bitArray.Not();
+            return this;
+        }
+
         public bool Has(Permission value)
         {
             for (int i = 0; i < bitArray.Count; i++)
@@ -104,6 +139,17 @@ namespace PermissionsWithBitArray
                 }
             }
             return true;
+        }
+
+        public override string ToString()
+        {
+            var stringBuilder = new StringBuilder();
+            for(int i = 0; i < bitArray.Count; i++)
+            {
+                var bit = bitArray.Get(i);
+                stringBuilder.Append(bit ? "1" : "0");
+            }
+            return stringBuilder.ToString();
         }
     }
 }
